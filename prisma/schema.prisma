@@ -1,0 +1,226 @@
+datasource db {
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model User {
+    id                  String    @id @default(cuid())
+    name                String?
+    email               String    @unique
+    emailVerified       DateTime?
+    image               String?
+    username            String?   @unique
+    initials            String    @default("NA")
+    location            String    @default("Remote")
+    shortbio            String    @default("I'm a developer")
+    summary             String    @default("I'm a developer")
+    skills              String[]
+    telephone           String?
+    onboardingCompleted Boolean   @default(false)
+    userType            String    @default("jobSeeker") // Can be "jobSeeker" or "hiringManager"
+
+    accounts  Account[]
+    sessions  Session[]
+    projects  Project[]
+    Education Education[]
+    Work      Work[]
+    social    Social[]
+
+    appliedJobs AppliedJob[]
+
+    companyId String?
+    Company   Company? @relation(fields: [companyId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    Job       Job[]
+}
+
+model AppliedJob {
+    id        String   @id @default(cuid())
+    jobId     String
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    status    String   @default("applied") // e.g., "applied", "interviewing", "rejected", "accepted"
+    appliedAt DateTime @default(now())
+
+    eventLogs AppliedJobEventLog[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model AppliedJobEventLog {
+    id           String     @id @default(cuid())
+    appliedJobId String
+    appliedJob   AppliedJob @relation(fields: [appliedJobId], references: [id])
+    event        String // Example: "application_submitted", "interview_scheduled", "offer_received"
+    description  String?
+    timestamp    DateTime   @default(now())
+}
+
+model Social {
+    id     String  @id @default(uuid())
+    name   String
+    url    String
+    icon   String
+    navbar Boolean
+    userId String
+    user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+    id          String   @id @default(cuid())
+    title       String
+    description String
+    href        String?
+    dates       String?
+    tags        String[]
+    image       String?
+    video       String?
+    repo        String?
+    links       Links[]
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Links {
+    id   String @id @default(cuid())
+    type String
+    href String
+    icon String
+
+    projectId String
+    project   Project @relation(fields: [projectId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Education {
+    id      String @id @default(cuid())
+    school  String
+    degree  String
+    href    String
+    start   String
+    end     String
+    logoUrl String
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Work {
+    id          String   @id @default(cuid())
+    company     String
+    href        String
+    badges      String[]
+    location    String   @default("Remote")
+    title       String
+    start       String
+    isCurrent   Boolean  @default(false)
+    end         String
+    logoUrl     String   @default("")
+    description String
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Account {
+    userId            String
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String?
+    access_token      String?
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String?
+    session_state     String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@id([provider, providerAccountId])
+}
+
+model Session {
+    sessionToken String   @unique
+    userId       String
+    expires      DateTime
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+    identifier String
+    token      String
+    expires    DateTime
+
+    @@id([identifier, token])
+}
+
+model Company {
+    id          String @id @default(cuid())
+    name        String
+    description String
+    logo        String
+    website     String
+    industry    String
+    size        String
+    founded     Int
+    location    String
+
+    jobs Job[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    User      User[]
+}
+
+model Job {
+    id                  String   @id @default(cuid())
+    title               String
+    location            String
+    type                String
+    salary              String
+    description         String
+    requirements        String[]
+    postedDate          DateTime
+    applicationDeadline DateTime
+    category            String
+    experienceLevel     String
+    skills              String[]
+    compensation        Json
+    requiredTechStack   String[]
+
+    companyId String
+    company   Company @relation(fields: [companyId], references: [id])
+
+    hiringManagerId String
+    hiringManager   User   @relation(fields: [hiringManagerId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
